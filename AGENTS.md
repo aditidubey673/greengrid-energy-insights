@@ -8,3 +8,8 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture
+
+- GreenGrid uses a shared `AppShell` with separate TanStack route files for each major product area, keeping navigation and page ownership explicit.
+- All dashboard visual values are semantic tokens in `src/styles.css`, so charts and interface surfaces share one maintainable theme.
