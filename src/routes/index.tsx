@@ -1,24 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Activity, AlertTriangle, IndianRupee, Leaf, Zap } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AppShell } from "@/components/greengrid/shell";
+import { chartColors, energySeries } from "@/components/greengrid/data";
+import { Card, ChartHeader, MetricCard, PageHeader, Segmented, StatusDot } from "@/components/greengrid/ui";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({ meta: [{ title: "Energy Dashboard | GreenGrid" }, { name: "description", content: "Monitor energy consumption, renewable generation, cost, and carbon impact." }, { property: "og:title", content: "Energy Dashboard | GreenGrid" }, { property: "og:description", content: "Live energy intelligence for smarter operations." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Dashboard,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
+const pie = [{ name: "Renewable", value: 53 }, { name: "Grid", value: 47 }];
+const comparison = [{ name: "Jan", current: 6840, previous: 7210 }, { name: "Feb", current: 6210, previous: 6940 }, { name: "Mar", current: 7180, previous: 7480 }, { name: "Apr", current: 6920, previous: 7360 }, { name: "May", current: 7520, previous: 7810 }, { name: "Jun", current: 7248, previous: 7640 }];
+
+function Dashboard() { const [period, setPeriod] = useState("monthly"); const series = energySeries[period as keyof typeof energySeries]; return <AppShell>
+  <PageHeader eyebrow="Executive overview" title="Energy Dashboard" description="A unified view of consumption, generation, cost, and environmental performance across your campus." action={<div className="hidden sm:block"><Segmented value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} /></div>} />
+  <div className="sm:hidden"><Segmented value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} /></div>
+  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><MetricCard label="Total consumption" value="7,248 kWh" detail="Current billing period" trend={-8.2} icon={Zap} /><MetricCard label="Renewable generation" value="3,842 kWh" detail="53% of total demand" trend={12.4} icon={Leaf} tone="blue" /><MetricCard label="Carbon emissions" value="1,824 kg" detail="CO₂ equivalent" trend={-14.7} icon={Activity} tone="amber" /><MetricCard label="Monthly bill" value="₹58,420" detail="Projected at month-end" trend={-6.1} icon={IndianRupee} tone="rose" /></div>
+  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]"><Card><ChartHeader title="Energy consumption" subtitle="Usage and renewable contribution" /><div className="h-80 p-4"><ResponsiveContainer width="100%" height="100%"><AreaChart data={series}><defs><linearGradient id="usageFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={chartColors.primary} stopOpacity={0.32}/><stop offset="100%" stopColor={chartColors.primary} stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke={chartColors.grid} vertical={false}/><XAxis dataKey="name" stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><YAxis stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><Tooltip contentStyle={{ background: chartColors.surface, border: `1px solid ${chartColors.grid}`, borderRadius: 8 }}/><Area type="monotone" dataKey="usage" stroke={chartColors.primary} strokeWidth={2.5} fill="url(#usageFill)"/><Area type="monotone" dataKey="renewable" stroke={chartColors.info} strokeWidth={2} fill="transparent"/></AreaChart></ResponsiveContainer></div></Card>
+  <Card><ChartHeader title="Energy mix" subtitle="Renewable vs non-renewable" /><div className="relative h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pie} innerRadius={72} outerRadius={94} dataKey="value" stroke="none"><Cell fill={chartColors.primary}/><Cell fill={chartColors.info}/></Pie><Tooltip contentStyle={{ background: chartColors.surface, border: `1px solid ${chartColors.grid}`, borderRadius: 8 }}/></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 grid place-items-center"><div className="text-center"><p className="text-3xl font-bold">53%</p><p className="text-xs text-muted-foreground">renewable</p></div></div></div><div className="grid grid-cols-2 gap-3 px-5 pb-5"><div className="rounded-lg bg-secondary p-3"><p className="text-xs text-muted-foreground">Renewable</p><p className="mt-1 font-semibold text-primary">3,842 kWh</p></div><div className="rounded-lg bg-secondary p-3"><p className="text-xs text-muted-foreground">Grid</p><p className="mt-1 font-semibold text-info">3,406 kWh</p></div></div></Card></div>
+  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]"><Card><ChartHeader title="Monthly comparison" subtitle="Current year against previous year" /><div className="h-72 p-4"><ResponsiveContainer width="100%" height="100%"><BarChart data={comparison}><CartesianGrid stroke={chartColors.grid} vertical={false}/><XAxis dataKey="name" stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><YAxis stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><Tooltip contentStyle={{ background: chartColors.surface, border: `1px solid ${chartColors.grid}`, borderRadius: 8 }}/><Bar dataKey="previous" fill={chartColors.info} opacity={0.35} radius={[4,4,0,0]}/><Bar dataKey="current" fill={chartColors.primary} radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></div></Card><Card><ChartHeader title="Recent activity" subtitle="Live alerts and system events" /><div className="divide-y divide-border px-5">{[{title:"Peak demand threshold reached", time:"12 min ago", icon: AlertTriangle, tone:"text-warning"},{title:"Solar array 02 back online",time:"48 min ago",icon:Zap,tone:"text-primary"},{title:"Monthly report generated",time:"2 hours ago",icon:Activity,tone:"text-info"},{title:"Grid frequency stabilized",time:"4 hours ago",icon:Activity,tone:"text-primary"}].map((item)=><div key={item.title} className="flex gap-3 py-4"><div className="mt-0.5"><StatusDot status={item.tone === "text-warning" ? "warning":"online"}/></div><div className="min-w-0"><p className="text-sm font-medium text-foreground">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.time}</p></div></div>)}</div></Card></div>
+</AppShell>; }
