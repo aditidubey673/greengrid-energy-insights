@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EnergyMonitoringRouteImport } from './routes/energy-monitoring'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SmartGridRouteImport } from './routes/smart-grid'
 import { Route as SolarCalculatorRouteImport } from './routes/solar-calculator'
+import { Route as SustainabilityRouteImport } from './routes/sustainability'
 import { Route as UtilityBillingRouteImport } from './routes/utility-billing'
 
 const IndexRoute = IndexRouteImport.update({
@@ -25,6 +27,11 @@ const EnergyMonitoringRoute = EnergyMonitoringRouteImport.update({
   path: '/energy-monitoring',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SmartGridRoute = SmartGridRouteImport.update({
   id: '/smart-grid',
   path: '/smart-grid',
@@ -33,6 +40,11 @@ const SmartGridRoute = SmartGridRouteImport.update({
 const SolarCalculatorRoute = SolarCalculatorRouteImport.update({
   id: '/solar-calculator',
   path: '/solar-calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SustainabilityRoute = SustainabilityRouteImport.update({
+  id: '/sustainability',
+  path: '/sustainability',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UtilityBillingRoute = UtilityBillingRouteImport.update({
@@ -44,23 +56,29 @@ const UtilityBillingRoute = UtilityBillingRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/settings': typeof SettingsRoute
   '/smart-grid': typeof SmartGridRoute
   '/solar-calculator': typeof SolarCalculatorRoute
+  '/sustainability': typeof SustainabilityRoute
   '/utility-billing': typeof UtilityBillingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/settings': typeof SettingsRoute
   '/smart-grid': typeof SmartGridRoute
   '/solar-calculator': typeof SolarCalculatorRoute
+  '/sustainability': typeof SustainabilityRoute
   '/utility-billing': typeof UtilityBillingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/settings': typeof SettingsRoute
   '/smart-grid': typeof SmartGridRoute
   '/solar-calculator': typeof SolarCalculatorRoute
+  '/sustainability': typeof SustainabilityRoute
   '/utility-billing': typeof UtilityBillingRoute
 }
 export interface FileRouteTypes {
@@ -68,30 +86,38 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/energy-monitoring'
+    | '/settings'
     | '/smart-grid'
     | '/solar-calculator'
+    | '/sustainability'
     | '/utility-billing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/energy-monitoring'
+    | '/settings'
     | '/smart-grid'
     | '/solar-calculator'
+    | '/sustainability'
     | '/utility-billing'
   id:
     | '__root__'
     | '/'
     | '/energy-monitoring'
+    | '/settings'
     | '/smart-grid'
     | '/solar-calculator'
+    | '/sustainability'
     | '/utility-billing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EnergyMonitoringRoute: typeof EnergyMonitoringRoute
+  SettingsRoute: typeof SettingsRoute
   SmartGridRoute: typeof SmartGridRoute
   SolarCalculatorRoute: typeof SolarCalculatorRoute
+  SustainabilityRoute: typeof SustainabilityRoute
   UtilityBillingRoute: typeof UtilityBillingRoute
 }
 
@@ -111,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EnergyMonitoringRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/smart-grid': {
       id: '/smart-grid'
       path: '/smart-grid'
@@ -123,6 +156,13 @@ declare module '@tanstack/react-router' {
       path: '/solar-calculator'
       fullPath: '/solar-calculator'
       preLoaderRoute: typeof SolarCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sustainability': {
+      id: '/sustainability'
+      path: '/sustainability'
+      fullPath: '/sustainability'
+      preLoaderRoute: typeof SustainabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/utility-billing': {
@@ -138,8 +178,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EnergyMonitoringRoute: EnergyMonitoringRoute,
+  SettingsRoute: SettingsRoute,
   SmartGridRoute: SmartGridRoute,
   SolarCalculatorRoute: SolarCalculatorRoute,
+  SustainabilityRoute: SustainabilityRoute,
   UtilityBillingRoute: UtilityBillingRoute,
 }
 export const routeTree = rootRouteImport
