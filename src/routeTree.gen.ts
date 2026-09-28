@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EnergyMonitoringRouteImport } from './routes/energy-monitoring'
+import { Route as SmartGridRouteImport } from './routes/smart-grid'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EnergyMonitoringRoute = EnergyMonitoringRouteImport.update({
+  id: '/energy-monitoring',
+  path: '/energy-monitoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmartGridRoute = SmartGridRouteImport.update({
+  id: '/smart-grid',
+  path: '/smart-grid',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/smart-grid': typeof SmartGridRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/smart-grid': typeof SmartGridRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/smart-grid': typeof SmartGridRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/energy-monitoring' | '/smart-grid'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/energy-monitoring' | '/smart-grid'
+  id: '__root__' | '/' | '/energy-monitoring' | '/smart-grid'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EnergyMonitoringRoute: typeof EnergyMonitoringRoute
+  SmartGridRoute: typeof SmartGridRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/energy-monitoring': {
+      id: '/energy-monitoring'
+      path: '/energy-monitoring'
+      fullPath: '/energy-monitoring'
+      preLoaderRoute: typeof EnergyMonitoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/smart-grid': {
+      id: '/smart-grid'
+      path: '/smart-grid'
+      fullPath: '/smart-grid'
+      preLoaderRoute: typeof SmartGridRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EnergyMonitoringRoute: EnergyMonitoringRoute,
+  SmartGridRoute: SmartGridRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
