@@ -11,6 +11,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import {
+  InitialLoadingScreen,
+  INITIAL_LOADER_CRITICAL_CSS,
+} from "../components/greengrid/initial-loading-screen";
 
 function NotFoundComponent() {
   return (
@@ -104,6 +108,10 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <style dangerouslySetInnerHTML={{ __html: INITIAL_LOADER_CRITICAL_CSS }} />
+        <noscript>
+          <style>{"#gg-app[data-loading]{visibility:visible}#gg-loader{display:none}"}</style>
+        </noscript>
         <HeadContent />
       </head>
       <body>
@@ -120,7 +128,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <InitialLoadingScreen>
+        <Outlet />
+      </InitialLoadingScreen>
     </QueryClientProvider>
   );
 }
