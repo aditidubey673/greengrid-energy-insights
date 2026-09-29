@@ -13,3 +13,4 @@
 
 - GreenGrid uses a shared `AppShell` with separate TanStack route files for each major product area, keeping navigation and page ownership explicit.
 - All dashboard visual values are semantic tokens in `src/styles.css`, so charts and interface surfaces share one maintainable theme.
+- Shared energy assumptions (tariff, CO₂ factor) live in `settings-store.ts` (localStorage + useSyncExternalStore) and solar math in pure `solar.ts`, so pages stay in sync and the math is testable.
