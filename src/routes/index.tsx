@@ -35,10 +35,97 @@ const dashboardViews = {
   },
 };
 
-function Dashboard() { const [period, setPeriod] = useState<keyof typeof dashboardViews>("monthly"); const selectPeriod = (value: string) => { if (value === "daily" || value === "weekly" || value === "monthly") setPeriod(value); }; const series = energySeries[period]; const view = dashboardViews[period]; const es = useEnergySettings(); const kwh = Number(view.metrics.consumption.replace(/[^0-9]/g, "")); const renewKwh = Number(view.metrics.renewable.replace(/[^0-9]/g, "")); const nf = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }); const emissions = `${nf.format((kwh - renewKwh) * es.emissionFactor)} kg`; const cost = `₹${nf.format(kwh * es.tariff)}`; const gridShare = 100 - view.metrics.renewableShare; const pie = [{ name: "Renewable", value: view.metrics.renewableShare }, { name: "Grid", value: gridShare }]; return <AppShell>
+function Dashboard() { const [period, setPeriod] = useState<keyof typeof dashboardViews>("monthly"); const selectPeriod = (value: string) => { if (value === "daily" || value === "weekly" || value === "monthly") setPeriod(value); }; 
+const series = energySeries[period]; 
+const view = dashboardViews[period]; 
+const es = useEnergySettings(); 
+const kwh = Number(view.metrics.consumption.replace(/[^0-9]/g, "")); 
+const renewKwh = Number(view.metrics.renewable.replace(/[^0-9]/g, "")); 
+const nf = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }); 
+const emissions = `${nf.format((kwh - renewKwh) * es.emissionFactor)} kg`; 
+const cost = `₹${nf.format(kwh * es.tariff)}`;
+const gridShare = 100 - view.metrics.renewableShare;
+const pie = [{ name: "Renewable", value: view.metrics.renewableShare }, { name: "Grid", value: gridShare }]; 
+return <AppShell>
   <PageHeader eyebrow="Executive overview" title="Energy Dashboard" description="A unified view of consumption, generation, cost, and environmental performance across your campus. Usage figures are sample demonstration data; cost and emissions are estimates from your Settings." action={<div className="hidden sm:block"><Segmented value={period} onChange={selectPeriod} options={["daily", "weekly", "monthly"]} /></div>} />
   <div className="sm:hidden"><Segmented value={period} onChange={selectPeriod} options={["daily", "weekly", "monthly"]} /></div>
-  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><MetricCard label="Total consumption" value={view.metrics.consumption} detail={view.details.consumption} trend={-8.2} icon={Zap} /><MetricCard label="Renewable generation" value={view.metrics.renewable} detail={view.details.renewable} trend={12.4} icon={Leaf} tone="blue" /><MetricCard label="Carbon emissions" value={emissions} detail={`Est. at ${es.emissionFactor} kg CO₂/kWh grid factor`} trend={-14.7} icon={Activity} tone="amber" /><MetricCard label={`${period.charAt(0).toUpperCase()}${period.slice(1)} energy cost`} value={cost} detail={`Est. at ₹${es.tariff}/kWh tariff`} trend={-6.1} icon={IndianRupee} tone="rose" /></div>
+
+
+  {/* <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><MetricCard label="Total consumption" value={view.metrics.consumption} detail={view.details.consumption} trend={-8.2} icon={Zap} /><MetricCard label="Renewable generation" value={view.metrics.renewable} detail={view.details.renewable} trend={12.4} icon={Leaf} tone="blue" /><MetricCard label="Carbon emissions" value={emissions} detail={`Est. at ${es.emissionFactor} kg CO₂/kWh grid factor`} trend={-14.7} icon={Activity} tone="amber" /><MetricCard label={`${period.charAt(0).toUpperCase()}${period.slice(1)} energy cost`} value={cost} detail={`Est. at ₹${es.tariff}/kWh tariff`} trend={-6.1} icon={IndianRupee} tone="rose" /></div> */}
+
+  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 [&>div]:min-h-[190px] [&>div]:p-6">
+  <MetricCard label="Total consumption" value={view.metrics.consumption} detail={view.details.consumption} trend={-8.2} icon={Zap} />
+  <MetricCard label="Renewable generation" value={view.metrics.renewable} detail={view.details.renewable} trend={12.4} icon={Leaf} tone="blue" />
+  <MetricCard label="Carbon emissions" value={emissions} detail={`Est. at ${es.emissionFactor} kg CO₂/kWh grid factor`} trend={-14.7} icon={Activity} tone="amber" />
+  <MetricCard label={`${period.charAt(0).toUpperCase()}${period.slice(1)} energy cost`} value={cost} detail={`Est. at ₹${es.tariff}/kWh tariff`} trend={-6.1} icon={IndianRupee} tone="rose" />
+</div>
+
+
+<div className="mt-6">
+  <div className="mb-4">
+    <h2 className="text-lg font-semibold text-foreground">
+      Renewable Generation Sources
+    </h2>
+    <p className="mt-1 text-sm text-muted-foreground">
+      Estimated contribution from solar, wind and hydro energy
+    </p>
+  </div>
+
+  <div className="grid gap-5 md:grid-cols-3">
+    {[
+      {
+        name: "Solar Energy",
+        value: Math.round(renewKwh * 0.55),
+        share: 55,
+        image: "/images/solar.jpg",
+        description: "Electricity generated from solar panels",
+      },
+      {
+        name: "Wind Energy",
+        value: Math.round(renewKwh * 0.25),
+        share: 25,
+        image: "/images/wind.jpg",
+        description: "Electricity generated by wind turbines",
+      },
+      {
+        name: "Hydro Energy",
+        value: Math.round(renewKwh * 0.2),
+        share: 20,
+        image: "/images/hydro.jpg",
+        description: "Electricity generated through hydropower",
+      },
+    ].map((source) => (
+      <Card key={source.name}>
+        <div className="overflow-hidden rounded-t-xl">
+          <img
+            src={source.image}
+            alt={source.name}
+            className="h-44 w-full object-cover"
+          />
+        </div>
+
+        <div className="p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-semibold text-foreground">{source.name}</h3>
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              {source.share}%
+            </span>
+          </div>
+
+          <p className="mt-3 text-2xl font-bold text-foreground">
+            {nf.format(source.value)} kWh
+          </p>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            {source.description}
+          </p>
+        </div>
+      </Card>
+    ))}
+  </div>
+</div>
+
+
   <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]"><Card><ChartHeader title="Energy consumption" subtitle="Usage and renewable contribution" /><div className="h-80 p-4"><ResponsiveContainer width="100%" height="100%"><AreaChart data={series}><defs><linearGradient id="usageFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={chartColors.primary} stopOpacity={0.32}/><stop offset="100%" stopColor={chartColors.primary} stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke={chartColors.grid} vertical={false}/><XAxis dataKey="name" stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><YAxis stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><Tooltip contentStyle={{ background: chartColors.surface, border: `1px solid ${chartColors.grid}`, borderRadius: 8 }}/><Area type="monotone" dataKey="usage" stroke={chartColors.primary} strokeWidth={2.5} fill="url(#usageFill)"/><Area type="monotone" dataKey="renewable" stroke={chartColors.info} strokeWidth={2} fill="transparent"/></AreaChart></ResponsiveContainer></div></Card>
   <Card><ChartHeader title="Energy mix" subtitle={`Renewable vs non-renewable · ${period}`} /><div className="relative h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pie} innerRadius={72} outerRadius={94} dataKey="value" stroke="none"><Cell fill={chartColors.primary}/><Cell fill={chartColors.info}/></Pie><Tooltip contentStyle={{ background: chartColors.surface, border: `1px solid ${chartColors.grid}`, borderRadius: 8 }}/></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 grid place-items-center"><div className="text-center"><p className="text-3xl font-bold">{view.metrics.renewableShare}%</p><p className="text-xs text-muted-foreground">renewable</p></div></div></div><div className="grid grid-cols-2 gap-3 px-5 pb-5"><div className="rounded-lg bg-secondary p-3"><p className="text-xs text-muted-foreground">Renewable</p><p className="mt-1 font-semibold text-primary">{view.metrics.renewable}</p></div><div className="rounded-lg bg-secondary p-3"><p className="text-xs text-muted-foreground">Grid share</p><p className="mt-1 font-semibold text-info">{gridShare}%</p></div></div></Card></div>
   <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]"><Card><ChartHeader title={view.comparisonTitle} subtitle={view.comparisonSubtitle} /><div className="h-72 p-4"><ResponsiveContainer width="100%" height="100%"><BarChart data={view.comparison}><CartesianGrid stroke={chartColors.grid} vertical={false}/><XAxis dataKey="name" stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><YAxis stroke={chartColors.muted} fontSize={11} tickLine={false} axisLine={false}/><Tooltip contentStyle={{ background: chartColors.surface, border: `1px solid ${chartColors.grid}`, borderRadius: 8 }}/><Bar dataKey="previous" fill={chartColors.info} opacity={0.35} radius={[4,4,0,0]}/><Bar dataKey="current" fill={chartColors.primary} radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></div></Card><Card><ChartHeader title="Recent activity" subtitle="Live alerts and system events" /><div className="divide-y divide-border px-5">{[{title:"Peak demand threshold reached", time:"12 min ago", icon: AlertTriangle, tone:"text-warning"},{title:"Solar array 02 back online",time:"48 min ago",icon:Zap,tone:"text-primary"},{title:"Monthly report generated",time:"2 hours ago",icon:Activity,tone:"text-info"},{title:"Grid frequency stabilized",time:"4 hours ago",icon:Activity,tone:"text-primary"}].map((item)=><div key={item.title} className="flex gap-3 py-4"><div className="mt-0.5"><StatusDot status={item.tone === "text-warning" ? "warning":"online"}/></div><div className="min-w-0"><p className="text-sm font-medium text-foreground">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.time}</p></div></div>)}</div></Card></div>
