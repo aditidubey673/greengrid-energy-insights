@@ -37,7 +37,7 @@ export function InitialLoadingScreen({
   src = "/videos/greengrid-loading.mp4",
   maxDurationMs = 10000,
   fallbackDurationMs = 900,
-  fadeDurationMs = 700,
+  fadeDurationMs = 250,
   label = "Loading GreenGrid",
   children,
 }: InitialLoadingScreenProps) {
