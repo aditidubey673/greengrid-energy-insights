@@ -47,7 +47,11 @@ const cost = `₹${nf.format(kwh * es.tariff)}`;
 const gridShare = 100 - view.metrics.renewableShare;
 const pie = [{ name: "Renewable", value: view.metrics.renewableShare }, { name: "Grid", value: gridShare }]; 
 return <AppShell>
-  <PageHeader eyebrow="Executive overview" title="Energy Dashboard" description="A unified view of consumption, generation, cost, and environmental performance across your campus. Usage figures are sample demonstration data; cost and emissions are estimates from your Settings." action={<div className="hidden sm:block"><Segmented value={period} onChange={selectPeriod} options={["daily", "weekly", "monthly"]} /></div>} />
+  <PageHeader
+  eyebrow="ENERGY INTELLIGENCE PLATFORM" 
+  title="Facility Energy Overview" 
+  description="Monitor energy consumption, renewable generation, operational costs and sustainability performance across your facilities."
+  action={<div className="hidden sm:block"><Segmented value={period} onChange={selectPeriod} options={["daily", "weekly", "monthly"]} /></div>} />
   <div className="sm:hidden"><Segmented value={period} onChange={selectPeriod} options={["daily", "weekly", "monthly"]} /></div>
 
 
