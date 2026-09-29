@@ -64,7 +64,11 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-overlay: var(--overlay);
-  --shadow-panel: 0 18px 45px color-mix(in oklab, var(--background) 70%, transparent);
+  --color-source-solar: var(--source-solar);
+  --color-source-wind: var(--source-wind);
+  --color-source-hydro: var(--source-hydro);
+  --color-source-grid: var(--source-grid);
+  --shadow-panel: 0 1px 2px oklch(0.24 0.025 160 / 5%);
 }
 
 /* :root {
@@ -160,6 +164,12 @@
   --chart-4: oklch(0.60 0.15 300);
   --chart-5: oklch(0.65 0.16 40);
 
+  /* Energy sources: emerald shades for renewables, neutral for grid import */
+  --source-solar: oklch(0.48 0.13 152);
+  --source-wind: oklch(0.62 0.1 160);
+  --source-hydro: oklch(0.76 0.07 165);
+  --source-grid: oklch(0.82 0.012 160);
+
   /* Sidebar */
   --sidebar: #DCE7DC;
   --sidebar-foreground: oklch(0.25 0.03 160);
@@ -223,6 +233,6 @@
   button, a, input, select { letter-spacing: 0; }
 }
 
-@utility shadow-status { box-shadow: 0 0 12px color-mix(in oklab, var(--primary) 70%, transparent); }
+@utility shadow-status { box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 18%, transparent); }
 
 * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
