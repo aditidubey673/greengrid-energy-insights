@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 from .models import Facility, EnergySource, EnergyReading, UtilityBill
 from .serializers import (
@@ -90,9 +90,12 @@ class EnergyReadingListCreateView(ListCreateAPIView):
     - facility: Facility ID
     - source: Energy source ID
     - source_type: 'grid', 'solar', 'hydro', 'wind'
+    - reading_type: 'consumption', 'generation'
     - start_date: 'YYYY-MM-DD'
     - end_date: 'YYYY-MM-DD'
     - is_demo: 'true' or 'false'
+    - search: search text matching facility name/code, location, or source name
+    - ordering: '-timestamp', 'timestamp', '-reading_value', 'reading_value', etc.
     """
 
     serializer_class = EnergyReadingSerializer
@@ -113,6 +116,10 @@ class EnergyReadingListCreateView(ListCreateAPIView):
         if source_type_param:
             qs = qs.filter(energy_source__source_type=source_type_param.lower())
 
+        reading_type_param = self.request.query_params.get("reading_type")
+        if reading_type_param:
+            qs = qs.filter(reading_type=reading_type_param.lower())
+
         start_date_param = self.request.query_params.get("start_date")
         if start_date_param:
             parsed_start = parse_date(start_date_param)
@@ -132,7 +139,71 @@ class EnergyReadingListCreateView(ListCreateAPIView):
             elif is_demo_param.lower() in ("false", "0"):
                 qs = qs.filter(is_demo=False)
 
-        return qs.order_by("-timestamp")
+        data_source_param = self.request.query_params.get("data_source")
+        if data_source_param:
+            if data_source_param.lower() == "kaggle":
+                qs = qs.filter(data_source__startswith="kaggle:")
+            else:
+                qs = qs.filter(data_source=data_source_param)
+
+        search_param = self.request.query_params.get("search")
+        if search_param:
+            search_query = search_param.strip()
+            qs = qs.filter(
+                Q(facility__name__icontains=search_query)
+                | Q(facility__code__icontains=search_query)
+                | Q(facility__location__icontains=search_query)
+                | Q(energy_source__name__icontains=search_query)
+                | Q(energy_source__source_type__icontains=search_query)
+                | Q(reading_type__icontains=search_query)
+                | Q(data_source__icontains=search_query)
+            )
+
+        ordering = self.request.query_params.get("ordering", "-timestamp")
+        valid_orderings = {
+            "-timestamp": "-timestamp",
+            "timestamp": "timestamp",
+            "-reading_value": "-reading_value",
+            "reading_value": "reading_value",
+            "facility__name": "facility__name",
+            "-facility__name": "-facility__name",
+        }
+        order_field = valid_orderings.get(ordering, "-timestamp")
+        return qs.order_by(order_field)
+
+
+class EnergyReadingDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    GET    /api/energy-readings/<int:pk>/ - view single reading detail
+    PUT    /api/energy-readings/<int:pk>/ - update reading
+    PATCH  /api/energy-readings/<int:pk>/ - partial update reading
+    DELETE /api/energy-readings/<int:pk>/ - delete reading
+    """
+
+    queryset = EnergyReading.objects.select_related("facility", "energy_source").all()
+    serializer_class = EnergyReadingSerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.is_demo:
+            return Response(
+                {
+                    "detail": "Demonstration records are protected and cannot be edited. Please create a new reading."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.is_demo:
+            return Response(
+                {
+                    "detail": "Demonstration records are protected and cannot be deleted. You can create and delete real readings."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class EnergySummaryView(APIView):
@@ -181,6 +252,13 @@ class EnergySummaryView(APIView):
             elif is_demo_param.lower() in ("false", "0"):
                 qs = qs.filter(is_demo=False)
 
+        data_source_param = request.query_params.get("data_source")
+        if data_source_param:
+            if data_source_param.lower() == "kaggle":
+                qs = qs.filter(data_source__startswith="kaggle:")
+            else:
+                qs = qs.filter(data_source=data_source_param)
+
         total_readings_count = qs.count()
 
         if total_readings_count == 0:
@@ -198,6 +276,7 @@ class EnergySummaryView(APIView):
                     "estimated_emissions_kg": 0.0,
                     "breakdown_by_source": [],
                     "breakdown_by_facility": [],
+                    "time_series": [],
                     "message": "No energy readings found for the specified criteria.",
                 },
                 status=status.HTTP_200_OK,
@@ -206,7 +285,7 @@ class EnergySummaryView(APIView):
         # Aggregate total consumption and renewables
         total_kwh = qs.aggregate(val=Sum("reading_value"))["val"] or Decimal("0.0")
         renewable_kwh = (
-            qs.filter(energy_source__is_renewable=True).aggregate(val=Sum("reading_value"))["val"]
+            qs.filter(Q(energy_source__is_renewable=True) | Q(reading_type="generation")).aggregate(val=Sum("reading_value"))["val"]
             or Decimal("0.0")
         )
         grid_kwh = (
@@ -278,7 +357,7 @@ class EnergySummaryView(APIView):
                 total=Sum("reading_value"),
                 renewable=Sum(
                     "reading_value",
-                    filter=Q(energy_source__is_renewable=True),
+                    filter=Q(energy_source__is_renewable=True) | Q(reading_type="generation"),
                 ),
             )
             .order_by("-total")
@@ -300,6 +379,60 @@ class EnergySummaryView(APIView):
             for item in facility_aggregates
         ]
 
+        # Time-series trend aggregation for charting
+        time_series = []
+        if period == "daily":
+            hours = [0, 4, 8, 12, 16, 20]
+            for h in hours:
+                label = f"{h:02d}:00"
+                hour_readings = qs.filter(timestamp__hour__gte=h, timestamp__hour__lt=h + 4)
+                usage = float(hour_readings.aggregate(val=Sum("reading_value"))["val"] or 0)
+                renewable = float(
+                    hour_readings.filter(
+                        Q(energy_source__is_renewable=True) | Q(reading_type="generation")
+                    ).aggregate(val=Sum("reading_value"))["val"]
+                    or 0
+                )
+                time_series.append({"name": label, "usage": round(usage, 1), "renewable": round(renewable, 1)})
+        elif period == "weekly":
+            days = [("Mon", 2), ("Tue", 3), ("Wed", 4), ("Thu", 5), ("Fri", 6), ("Sat", 7), ("Sun", 1)]
+            for label, d in days:
+                day_readings = qs.filter(timestamp__week_day=d)
+                usage = float(day_readings.aggregate(val=Sum("reading_value"))["val"] or 0)
+                renewable = float(
+                    day_readings.filter(
+                        Q(energy_source__is_renewable=True) | Q(reading_type="generation")
+                    ).aggregate(val=Sum("reading_value"))["val"]
+                    or 0
+                )
+                time_series.append({"name": label, "usage": round(usage, 1), "renewable": round(renewable, 1)})
+        elif period == "monthly":
+            month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            curr_month = now.month
+            start_m = max(1, curr_month - 5)
+            for m in range(start_m, curr_month + 1):
+                m_readings = qs.filter(timestamp__month=m)
+                usage = float(m_readings.aggregate(val=Sum("reading_value"))["val"] or 0)
+                renewable = float(
+                    m_readings.filter(
+                        Q(energy_source__is_renewable=True) | Q(reading_type="generation")
+                    ).aggregate(val=Sum("reading_value"))["val"]
+                    or 0
+                )
+                time_series.append({"name": month_names[m - 1], "usage": round(usage, 1), "renewable": round(renewable, 1)})
+        else:
+            days = [("Mon", 2), ("Tue", 3), ("Wed", 4), ("Thu", 5), ("Fri", 6), ("Sat", 7), ("Sun", 1)]
+            for label, d in days:
+                day_readings = qs.filter(timestamp__week_day=d)
+                usage = float(day_readings.aggregate(val=Sum("reading_value"))["val"] or 0)
+                renewable = float(
+                    day_readings.filter(
+                        Q(energy_source__is_renewable=True) | Q(reading_type="generation")
+                    ).aggregate(val=Sum("reading_value"))["val"]
+                    or 0
+                )
+                time_series.append({"name": label, "usage": round(usage, 1), "renewable": round(renewable, 1)})
+
         return Response(
             {
                 "is_empty": False,
@@ -315,6 +448,7 @@ class EnergySummaryView(APIView):
                 "estimated_emissions_kg": estimated_emissions_kg,
                 "breakdown_by_source": breakdown_by_source,
                 "breakdown_by_facility": breakdown_by_facility,
+                "time_series": time_series,
             },
             status=status.HTTP_200_OK,
         )

@@ -83,6 +83,7 @@ class EnergyReadingAndSummaryTests(TestCase):
         payload = {
             "facility": self.facility.id,
             "energy_source": self.solar_source.id,
+            "reading_type": "generation",
             "reading_value": "125.500",
             "unit": "kWh",
             "demand_kw": "31.40",
@@ -93,6 +94,7 @@ class EnergyReadingAndSummaryTests(TestCase):
         self.assertEqual(Decimal(str(response.data["reading_value"])), Decimal("125.500"))
         self.assertEqual(response.data["facility_name"], "Block A")
         self.assertEqual(response.data["source_name"], "Solar PV")
+        self.assertEqual(response.data["reading_type"], "generation")
 
     def test_create_energy_reading_negative_rejected(self):
         url = reverse("energy:energy-reading-list-create")
@@ -104,6 +106,90 @@ class EnergyReadingAndSummaryTests(TestCase):
         }
         response = self.client.post(url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_retrieve_update_delete_energy_reading(self):
+        reading = EnergyReading.objects.create(
+            facility=self.facility,
+            energy_source=self.solar_source,
+            reading_type="generation",
+            reading_value=Decimal("75.000"),
+            unit="kWh",
+            is_demo=False,
+        )
+        detail_url = reverse("energy:energy-reading-detail", kwargs={"pk": reading.pk})
+
+        # Retrieve (View)
+        get_resp = self.client.get(detail_url)
+        self.assertEqual(get_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_resp.data["id"], reading.pk)
+        self.assertEqual(Decimal(str(get_resp.data["reading_value"])), Decimal("75.000"))
+
+        # Update (Edit)
+        patch_payload = {"reading_value": "90.500"}
+        patch_resp = self.client.patch(detail_url, patch_payload, format="json")
+        self.assertEqual(patch_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(Decimal(str(patch_resp.data["reading_value"])), Decimal("90.500"))
+
+        # Delete
+        del_resp = self.client.delete(detail_url)
+        self.assertEqual(del_resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(EnergyReading.objects.filter(pk=reading.pk).exists())
+
+    def test_demo_energy_reading_cannot_be_deleted_or_edited(self):
+        demo_reading = EnergyReading.objects.create(
+            facility=self.facility,
+            energy_source=self.grid_source,
+            reading_type="consumption",
+            reading_value=Decimal("150.000"),
+            unit="kWh",
+            is_demo=True,
+        )
+        detail_url = reverse("energy:energy-reading-detail", kwargs={"pk": demo_reading.pk})
+
+        # Attempt to edit demo reading -> 400 Bad Request
+        patch_resp = self.client.patch(detail_url, {"reading_value": "200.000"}, format="json")
+        self.assertEqual(patch_resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Attempt to delete demo reading -> 400 Bad Request
+        del_resp = self.client.delete(detail_url)
+        self.assertEqual(del_resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(EnergyReading.objects.filter(pk=demo_reading.pk).exists())
+
+    def test_energy_reading_search_and_filters(self):
+        EnergyReading.objects.create(
+            facility=self.facility,
+            energy_source=self.solar_source,
+            reading_type="generation",
+            reading_value=Decimal("100.000"),
+            unit="kWh",
+            is_demo=False,
+        )
+        EnergyReading.objects.create(
+            facility=self.facility,
+            energy_source=self.grid_source,
+            reading_type="consumption",
+            reading_value=Decimal("200.000"),
+            unit="kWh",
+            is_demo=False,
+        )
+
+        list_url = reverse("energy:energy-reading-list-create")
+
+        # Filter by reading_type=generation
+        gen_resp = self.client.get(list_url, {"reading_type": "generation"})
+        self.assertEqual(gen_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(gen_resp.data["count"], 1)
+        self.assertEqual(gen_resp.data["results"][0]["reading_type"], "generation")
+
+        # Search by source name
+        search_resp = self.client.get(list_url, {"search": "Solar"})
+        self.assertEqual(search_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(search_resp.data["count"], 1)
+
+        # Filter by facility
+        fac_resp = self.client.get(list_url, {"facility": self.facility.id})
+        self.assertEqual(fac_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(fac_resp.data["count"], 2)
 
     def test_energy_summary_calculation(self):
         # Create 300 kWh grid + 200 kWh solar => 500 kWh total, 40% renewable
@@ -176,3 +262,87 @@ class UtilityBillAPITests(TestCase):
         }
         response = self.client.post(url, invalid_payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class KaggleIntegrationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.facility = Facility.objects.create(name="Lab Block", code="LAB-01")
+        self.solar_source = EnergySource.objects.create(
+            name="Solar Array",
+            source_type="solar",
+            is_renewable=True,
+            emission_factor=Decimal("0.0000"),
+        )
+        self.grid_source = EnergySource.objects.create(
+            name="Main Grid",
+            source_type="grid",
+            is_renewable=False,
+            emission_factor=Decimal("0.8200"),
+        )
+
+    def test_reading_with_data_source(self):
+        reading = EnergyReading.objects.create(
+            facility=self.facility,
+            energy_source=self.solar_source,
+            reading_type="generation",
+            reading_value=Decimal("45.500"),
+            unit="kWh",
+            demand_kw=Decimal("15.20"),
+            is_demo=False,
+            data_source="kaggle:solar-generation",
+        )
+        self.assertEqual(reading.data_source, "kaggle:solar-generation")
+        self.assertFalse(reading.is_demo)
+
+        # List filter by data_source
+        url = reverse("energy:energy-reading-list-create")
+        resp = self.client.get(url, {"data_source": "kaggle:solar-generation"})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["count"], 1)
+        self.assertEqual(resp.data["results"][0]["data_source"], "kaggle:solar-generation")
+
+        # Generic kaggle filter
+        resp_kaggle = self.client.get(url, {"data_source": "kaggle"})
+        self.assertEqual(resp_kaggle.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp_kaggle.data["count"], 1)
+
+    def test_summary_filter_by_data_source(self):
+        now = timezone.now()
+        EnergyReading.objects.create(
+            facility=self.facility,
+            energy_source=self.solar_source,
+            reading_type="generation",
+            timestamp=now,
+            reading_value=Decimal("100.000"),
+            unit="kWh",
+            is_demo=False,
+            data_source="kaggle:solar-generation",
+        )
+        EnergyReading.objects.create(
+            facility=self.facility,
+            energy_source=self.grid_source,
+            reading_type="consumption",
+            timestamp=now,
+            reading_value=Decimal("50.000"),
+            unit="kWh",
+            is_demo=True,
+            data_source="synthetic",
+        )
+
+        url = reverse("energy:energy-summary")
+        resp_kaggle = self.client.get(url, {"data_source": "kaggle"})
+        self.assertEqual(resp_kaggle.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp_kaggle.data["readings_count"], 1)
+        self.assertEqual(resp_kaggle.data["renewable_generation_kwh"], 100.0)
+
+    def test_management_command_dry_run(self):
+        from django.core.management import call_command
+        from io import StringIO
+
+        out = StringIO()
+        call_command("import_kaggle_energy_data", "--dry-run", stdout=out)
+        output = out.getvalue()
+        self.assertIn("Dry run completed", output)
+        self.assertIn("Conventional Electricity", output)
+

@@ -15,6 +15,7 @@ import {
   InitialLoadingScreen,
   INITIAL_LOADER_CRITICAL_CSS,
 } from "../components/greengrid/initial-loading-screen";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -131,6 +132,7 @@ function RootComponent() {
       <InitialLoadingScreen>
         <Outlet />
       </InitialLoadingScreen>
+      <Toaster />
     </QueryClientProvider>
   );
 }

@@ -188,11 +188,24 @@ function Dashboard() {
     loadBackendData();
   }, [period, dataSource, es.tariff]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      loadBackendData();
+    };
+    window.addEventListener("energy-readings-updated", handleUpdate);
+    return () => window.removeEventListener("energy-readings-updated", handleUpdate);
+  }, [period, dataSource, es.tariff]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const view = dashboardViews[period];
-  const series = energySeries[period];
 
   // Determine whether to use Live Backend or Fallback Demo
   const isUsingLive = dataSource === "live" && liveSummary !== null && !liveSummary.is_empty;
+
+  const liveSeries =
+    isUsingLive && liveSummary?.time_series && liveSummary.time_series.length > 0
+      ? liveSummary.time_series
+      : null;
+  const series = liveSeries || energySeries[period];
 
   const totalKwh = isUsingLive
     ? liveSummary.total_consumption_kwh
@@ -404,16 +417,14 @@ function Dashboard() {
           {[
             {
               name: "Solar Energy",
-              value: isUsingLive
+              value: isUsingLive && liveSummary.breakdown_by_source.some((s) => s.source_type === "solar")
                 ? Math.round(
-                    liveSummary.breakdown_by_source.find((s) => s.source_type === "solar")?.kwh ||
-                      renewKwh * 0.55,
+                    liveSummary.breakdown_by_source.find((s) => s.source_type === "solar")!.kwh,
                   )
                 : Math.round(renewKwh * 0.55),
-              share: isUsingLive
+              share: isUsingLive && liveSummary.breakdown_by_source.some((s) => s.source_type === "solar")
                 ? Math.round(
-                    liveSummary.breakdown_by_source.find((s) => s.source_type === "solar")?.share ||
-                      55,
+                    liveSummary.breakdown_by_source.find((s) => s.source_type === "solar")!.share,
                   )
                 : 55,
               image: "/images/solar.jpg",
@@ -421,16 +432,14 @@ function Dashboard() {
             },
             {
               name: "Wind Energy",
-              value: isUsingLive
+              value: isUsingLive && liveSummary.breakdown_by_source.some((s) => s.source_type === "wind")
                 ? Math.round(
-                    liveSummary.breakdown_by_source.find((s) => s.source_type === "wind")?.kwh ||
-                      renewKwh * 0.25,
+                    liveSummary.breakdown_by_source.find((s) => s.source_type === "wind")!.kwh,
                   )
                 : Math.round(renewKwh * 0.25),
-              share: isUsingLive
+              share: isUsingLive && liveSummary.breakdown_by_source.some((s) => s.source_type === "wind")
                 ? Math.round(
-                    liveSummary.breakdown_by_source.find((s) => s.source_type === "wind")?.share ||
-                      25,
+                    liveSummary.breakdown_by_source.find((s) => s.source_type === "wind")!.share,
                   )
                 : 25,
               image: "/images/wind.jpg",
@@ -438,16 +447,14 @@ function Dashboard() {
             },
             {
               name: "Hydro Energy",
-              value: isUsingLive
+              value: isUsingLive && liveSummary.breakdown_by_source.some((s) => s.source_type === "hydro")
                 ? Math.round(
-                    liveSummary.breakdown_by_source.find((s) => s.source_type === "hydro")?.kwh ||
-                      renewKwh * 0.2,
+                    liveSummary.breakdown_by_source.find((s) => s.source_type === "hydro")!.kwh,
                   )
                 : Math.round(renewKwh * 0.2),
-              share: isUsingLive
+              share: isUsingLive && liveSummary.breakdown_by_source.some((s) => s.source_type === "hydro")
                 ? Math.round(
-                    liveSummary.breakdown_by_source.find((s) => s.source_type === "hydro")?.share ||
-                      20,
+                    liveSummary.breakdown_by_source.find((s) => s.source_type === "hydro")!.share,
                   )
                 : 20,
               image: "/images/hydro.jpg",

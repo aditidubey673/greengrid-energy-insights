@@ -89,6 +89,11 @@ class EnergySource(models.Model):
 class EnergyReading(models.Model):
     """Time-series energy generation or consumption reading."""
 
+    READING_TYPE_CHOICES = [
+        ("consumption", "Consumption"),
+        ("generation", "Generation"),
+    ]
+
     facility = models.ForeignKey(
         Facility,
         on_delete=models.CASCADE,
@@ -100,6 +105,13 @@ class EnergyReading(models.Model):
         on_delete=models.CASCADE,
         related_name="readings",
         db_index=True,
+    )
+    reading_type = models.CharField(
+        max_length=20,
+        choices=READING_TYPE_CHOICES,
+        default="consumption",
+        db_index=True,
+        help_text="Designates whether the reading measures energy consumption or generation",
     )
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)
     reading_value = models.DecimalField(
@@ -122,6 +134,13 @@ class EnergyReading(models.Model):
         db_index=True,
         help_text="Flag explicitly distinguishing demonstrative sample data from live readings",
     )
+    data_source = models.CharField(
+        max_length=100,
+        default="synthetic",
+        blank=True,
+        db_index=True,
+        help_text="Original dataset source, e.g., 'kaggle:household-power', 'kaggle:solar-generation', 'synthetic'",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -130,10 +149,12 @@ class EnergyReading(models.Model):
             models.Index(fields=["facility", "timestamp"]),
             models.Index(fields=["energy_source", "timestamp"]),
             models.Index(fields=["timestamp", "is_demo"]),
+            models.Index(fields=["reading_type", "timestamp"]),
+            models.Index(fields=["data_source", "timestamp"]),
         ]
 
     def __str__(self):
-        return f"{self.facility.name} - {self.energy_source.name}: {self.reading_value} {self.unit} @ {self.timestamp}"
+        return f"{self.facility.name} - {self.energy_source.name} ({self.reading_type}): {self.reading_value} {self.unit} @ {self.timestamp}"
 
 
 class UtilityBill(models.Model):

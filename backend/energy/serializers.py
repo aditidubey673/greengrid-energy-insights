@@ -59,19 +59,37 @@ class EnergyReadingSerializer(serializers.ModelSerializer):
             "source_name",
             "source_type",
             "is_renewable",
+            "reading_type",
             "timestamp",
             "reading_value",
             "unit",
             "demand_kw",
             "is_demo",
+            "data_source",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
 
     def validate_reading_value(self, value):
-        if value < Decimal("0.000"):
-            raise serializers.ValidationError("Energy reading value cannot be negative.")
+        if value is None or value <= Decimal("0.000"):
+            raise serializers.ValidationError("Energy reading value must be a positive number greater than 0.")
         return value
+
+    def validate_reading_type(self, value):
+        if value not in ("consumption", "generation"):
+            raise serializers.ValidationError("Reading type must be either 'consumption' or 'generation'.")
+        return value
+
+    def validate(self, attrs):
+        # Auto-assign reading_type if omitted
+        if not attrs.get("reading_type"):
+            energy_source = attrs.get("energy_source")
+            if energy_source:
+                attrs["reading_type"] = "generation" if energy_source.is_renewable else "consumption"
+            else:
+                attrs["reading_type"] = "consumption"
+
+        return attrs
 
 
 class UtilityBillSerializer(serializers.ModelSerializer):

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EnergyMonitoringRouteImport } from './routes/energy-monitoring'
+import { Route as EnergyReadingsRouteImport } from './routes/energy-readings'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SmartGridRouteImport } from './routes/smart-grid'
 import { Route as SolarCalculatorRouteImport } from './routes/solar-calculator'
@@ -25,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const EnergyMonitoringRoute = EnergyMonitoringRouteImport.update({
   id: '/energy-monitoring',
   path: '/energy-monitoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnergyReadingsRoute = EnergyReadingsRouteImport.update({
+  id: '/energy-readings',
+  path: '/energy-readings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -56,6 +62,7 @@ const UtilityBillingRoute = UtilityBillingRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/energy-readings': typeof EnergyReadingsRoute
   '/settings': typeof SettingsRoute
   '/smart-grid': typeof SmartGridRoute
   '/solar-calculator': typeof SolarCalculatorRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/energy-readings': typeof EnergyReadingsRoute
   '/settings': typeof SettingsRoute
   '/smart-grid': typeof SmartGridRoute
   '/solar-calculator': typeof SolarCalculatorRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/energy-monitoring': typeof EnergyMonitoringRoute
+  '/energy-readings': typeof EnergyReadingsRoute
   '/settings': typeof SettingsRoute
   '/smart-grid': typeof SmartGridRoute
   '/solar-calculator': typeof SolarCalculatorRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/energy-monitoring'
+    | '/energy-readings'
     | '/settings'
     | '/smart-grid'
     | '/solar-calculator'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/energy-monitoring'
+    | '/energy-readings'
     | '/settings'
     | '/smart-grid'
     | '/solar-calculator'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/energy-monitoring'
+    | '/energy-readings'
     | '/settings'
     | '/smart-grid'
     | '/solar-calculator'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EnergyMonitoringRoute: typeof EnergyMonitoringRoute
+  EnergyReadingsRoute: typeof EnergyReadingsRoute
   SettingsRoute: typeof SettingsRoute
   SmartGridRoute: typeof SmartGridRoute
   SolarCalculatorRoute: typeof SolarCalculatorRoute
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/energy-monitoring'
       fullPath: '/energy-monitoring'
       preLoaderRoute: typeof EnergyMonitoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/energy-readings': {
+      id: '/energy-readings'
+      path: '/energy-readings'
+      fullPath: '/energy-readings'
+      preLoaderRoute: typeof EnergyReadingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EnergyMonitoringRoute: EnergyMonitoringRoute,
+  EnergyReadingsRoute: EnergyReadingsRoute,
   SettingsRoute: SettingsRoute,
   SmartGridRoute: SmartGridRoute,
   SolarCalculatorRoute: SolarCalculatorRoute,

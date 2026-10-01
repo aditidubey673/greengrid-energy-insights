@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   CircleGauge,
   CreditCard,
+  Gauge,
   Leaf,
   Menu,
   Settings,
@@ -19,6 +20,7 @@ import { Button } from "./ui";
 const nav = [
   { label: "Dashboard", to: "/", icon: CircleGauge },
   { label: "Energy Monitoring", to: "/energy-monitoring", icon: Activity },
+  { label: "Energy Readings", to: "/energy-readings", icon: Gauge },
   { label: "Smart Grid", to: "/smart-grid", icon: Zap },
   { label: "Renewable Energy Calculator", to: "/solar-calculator", icon: Calculator },
   { label: "Utility Billing", to: "/utility-billing", icon: CreditCard },

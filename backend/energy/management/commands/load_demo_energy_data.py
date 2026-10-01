@@ -137,11 +137,13 @@ class Command(BaseCommand):
                         EnergyReading(
                             facility=fac,
                             energy_source=grid_source,
+                            reading_type="consumption",
                             timestamp=reading_ts,
                             reading_value=grid_val,
                             unit="kWh",
                             demand_kw=round(grid_val / Decimal("4.0"), 2),
                             is_demo=True,
+                            data_source="synthetic",
                         )
                     )
 
@@ -152,11 +154,13 @@ class Command(BaseCommand):
                             EnergyReading(
                                 facility=fac,
                                 energy_source=solar_source,
+                                reading_type="generation",
                                 timestamp=reading_ts,
                                 reading_value=solar_val,
                                 unit="kWh",
                                 demand_kw=round(solar_val / Decimal("4.0"), 2),
                                 is_demo=True,
+                                data_source="synthetic",
                             )
                         )
 
@@ -166,11 +170,13 @@ class Command(BaseCommand):
                         EnergyReading(
                             facility=fac,
                             energy_source=hydro_source,
+                            reading_type="generation",
                             timestamp=reading_ts,
                             reading_value=hydro_val,
                             unit="kWh",
                             demand_kw=round(hydro_val / Decimal("4.0"), 2),
                             is_demo=True,
+                            data_source="synthetic",
                         )
                     )
 

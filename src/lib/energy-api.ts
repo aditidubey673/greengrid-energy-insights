@@ -41,11 +41,13 @@ export interface EnergyReading {
   source_name?: string;
   source_type?: string;
   is_renewable?: boolean;
+  reading_type: "consumption" | "generation";
   timestamp: string;
   reading_value: number;
   unit: string;
   demand_kw?: number | null;
   is_demo: boolean;
+  data_source?: string;
   created_at?: string;
 }
 
@@ -67,6 +69,12 @@ export interface FacilityBreakdown {
   share: number;
 }
 
+export interface TimeSeriesPoint {
+  name: string;
+  usage: number;
+  renewable: number;
+}
+
 export interface EnergySummary {
   is_empty: boolean;
   period: string;
@@ -81,6 +89,7 @@ export interface EnergySummary {
   estimated_emissions_kg: number;
   breakdown_by_source: SourceBreakdown[];
   breakdown_by_facility: FacilityBreakdown[];
+  time_series?: TimeSeriesPoint[];
   message?: string;
 }
 
@@ -131,6 +140,19 @@ export async function fetchFacilities(): Promise<Facility[]> {
 }
 
 /**
+ * List all energy sources from backend
+ */
+export async function fetchEnergySources(): Promise<EnergySource[]> {
+  const response = await apiClient.get<PaginatedResponse<EnergySource> | EnergySource[]>(
+    "/api/energy-sources/",
+  );
+  if (Array.isArray(response.data)) {
+    return response.data;
+  }
+  return response.data.results || [];
+}
+
+/**
  * Create a new facility
  */
 export async function createFacility(data: Partial<Facility>): Promise<Facility> {
@@ -138,19 +160,27 @@ export async function createFacility(data: Partial<Facility>): Promise<Facility>
   return response.data;
 }
 
-/**
- * Fetch energy readings with optional filtering and pagination
- */
-export async function fetchEnergyReadings(params?: {
+export interface EnergyReadingsFilterParams {
   page?: number;
   page_size?: number;
-  facility?: number;
-  source?: number;
+  facility?: number | string;
+  source?: number | string;
   source_type?: string;
+  reading_type?: string;
   start_date?: string;
   end_date?: string;
   is_demo?: boolean;
-}): Promise<PaginatedResponse<EnergyReading>> {
+  data_source?: string;
+  search?: string;
+  ordering?: string;
+}
+
+/**
+ * Fetch energy readings with optional filtering and pagination
+ */
+export async function fetchEnergyReadings(
+  params?: EnergyReadingsFilterParams,
+): Promise<PaginatedResponse<EnergyReading>> {
   const response = await apiClient.get<PaginatedResponse<EnergyReading>>("/api/energy-readings/", {
     params,
   });
@@ -158,19 +188,50 @@ export async function fetchEnergyReadings(params?: {
 }
 
 /**
- * Submit an energy reading to backend
+ * Fetch a single energy reading by ID
  */
-export async function createEnergyReading(data: {
+export async function fetchEnergyReading(id: number): Promise<EnergyReading> {
+  const response = await apiClient.get<EnergyReading>(`/api/energy-readings/${id}/`);
+  return response.data;
+}
+
+export interface CreateEnergyReadingPayload {
   facility: number;
   energy_source: number;
+  reading_type: "consumption" | "generation";
   reading_value: number;
   unit?: string;
-  demand_kw?: number;
+  demand_kw?: number | null;
   timestamp?: string;
   is_demo?: boolean;
-}): Promise<EnergyReading> {
+}
+
+/**
+ * Submit an energy reading to backend
+ */
+export async function createEnergyReading(
+  data: CreateEnergyReadingPayload,
+): Promise<EnergyReading> {
   const response = await apiClient.post<EnergyReading>("/api/energy-readings/", data);
   return response.data;
+}
+
+/**
+ * Update an energy reading
+ */
+export async function updateEnergyReading(
+  id: number,
+  data: Partial<CreateEnergyReadingPayload>,
+): Promise<EnergyReading> {
+  const response = await apiClient.patch<EnergyReading>(`/api/energy-readings/${id}/`, data);
+  return response.data;
+}
+
+/**
+ * Delete an energy reading
+ */
+export async function deleteEnergyReading(id: number): Promise<void> {
+  await apiClient.delete(`/api/energy-readings/${id}/`);
 }
 
 /**
@@ -181,6 +242,8 @@ export async function fetchEnergySummary(params?: {
   facility?: number;
   tariff?: number;
   is_demo?: boolean;
+  data_source?: string;
+  reading_type?: string;
 }): Promise<EnergySummary> {
   const response = await apiClient.get<EnergySummary>("/api/energy-summary/", {
     params,

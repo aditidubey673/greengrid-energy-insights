@@ -12,6 +12,7 @@ urlpatterns = [
     path("energy-sources/", views.EnergySourceListView.as_view(), name="energy-source-list-create"),
     # Energy Readings
     path("energy-readings/", views.EnergyReadingListCreateView.as_view(), name="energy-reading-list-create"),
+    path("energy-readings/<int:pk>/", views.EnergyReadingDetailView.as_view(), name="energy-reading-detail"),
     # Energy Aggregation Summary
     path("energy-summary/", views.EnergySummaryView.as_view(), name="energy-summary"),
     # Utility Bills
