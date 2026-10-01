@@ -154,3 +154,155 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+---
+
+## Backend Architecture (Django REST Framework + MySQL)
+
+GreenGrid includes a modular Django REST Framework backend connected to a MySQL database, providing real-time data persistence, facility tracking, energy readings aggregation, and utility billing.
+
+### 1. Directory Structure
+
+```text
+greengrid-energy-insights/
+├── backend/
+│   ├── .env.example              # Template for database & Django credentials
+│   ├── .gitignore                # Ignores venvs, .env, and SQLite files
+│   ├── requirements.txt          # Python dependencies (Django, DRF, PyMySQL, etc.)
+│   ├── manage.py                 # Django command-line runner
+│   ├── config/                   # Django core settings & routing
+│   │   ├── __init__.py           # Configures PyMySQL as MySQLdb driver
+│   │   ├── settings.py           # Database, CORS, and REST framework settings
+│   │   ├── urls.py               # Main URL routing (/api/ and /admin/)
+│   │   ├── wsgi.py               # WSGI application entrypoint
+│   │   └── asgi.py               # ASGI application entrypoint
+│   └── energy/                   # Energy management application
+│       ├── models.py             # Facility, EnergySource, EnergyReading, UtilityBill
+│       ├── serializers.py        # Model serializers and input validation
+│       ├── views.py              # REST API endpoints (Health, Readings, Summary)
+│       ├── urls.py               # API route definitions
+│       ├── pagination.py         # Standard pagination configuration
+│       ├── tests.py              # Unit test suite for API endpoints
+│       └── management/commands/  # load_demo_energy_data command
+├── src/                          # Existing React + TypeScript frontend
+│   ├── lib/
+│   │   ├── api.ts                # Central Axios client (reads VITE_API_BASE_URL)
+│   │   └── energy-api.ts         # TypeScript API interfaces & query functions
+│   └── routes/
+│       └── index.tsx             # Dashboard connected to /api/energy-summary/
+└── .env.example                  # Frontend environment template
+```
+
+---
+
+### 2. MySQL Database Setup
+
+1. Open your MySQL client (MySQL Command Line Client, MySQL Workbench, or phpMyAdmin) and run:
+
+```sql
+CREATE DATABASE IF NOT EXISTS greengrid_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER IF NOT EXISTS 'greengrid_user'@'localhost' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON greengrid_db.* TO 'greengrid_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+2. Copy `backend/.env.example` to `backend/.env` and update credentials:
+
+```ini
+DEBUG=True
+SECRET_KEY=your_generated_secret_key
+DB_ENGINE=mysql
+DB_NAME=greengrid_db
+DB_USER=greengrid_user
+DB_PASSWORD=your_secure_password
+DB_HOST=127.0.0.1
+DB_PORT=3306
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+```
+
+*(Note: For environments without MySQL running, set `DB_ENGINE=sqlite` to test with SQLite).*
+
+---
+
+### 3. REST API Endpoint Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/health/` | Checks Django and MySQL connection health status |
+| `GET` | `/api/facilities/` | List all monitored campus facilities |
+| `POST` | `/api/facilities/` | Register a new facility (`name`, `code`, `location`, `floor_area_sqft`) |
+| `GET` | `/api/energy-sources/` | List energy sources (`grid`, `solar`, `hydro`, `wind`) |
+| `POST` | `/api/energy-sources/` | Register a new energy source with its carbon emission factor |
+| `GET` | `/api/energy-readings/` | Paginated readings with `facility`, `source_type`, `start_date`, `end_date` filters |
+| `POST` | `/api/energy-readings/` | Record an energy reading (`facility`, `energy_source`, `reading_value`, `unit`) |
+| `GET` | `/api/energy-summary/` | Aggregate metrics (`total_consumption_kwh`, `renewable_percentage`, `estimated_cost`, `estimated_emissions_kg`) |
+| `GET` | `/api/utility-bills/` | List utility billing records with `status` and `facility` filters |
+| `POST` | `/api/utility-bills/` | Add a utility bill invoice record |
+
+---
+
+### 4. Running the Project
+
+#### Step A: Windows PowerShell
+
+```powershell
+# 1. Navigate to backend and create virtual environment
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# 2. Install Python dependencies
+pip install -r requirements.txt
+
+# 3. Create .env from template and configure MySQL credentials
+Copy-Item .env.example .env
+
+# 4. Apply database migrations
+python manage.py migrate
+
+# 5. (Optional) Load sample demonstration data
+python manage.py load_demo_energy_data
+
+# 6. Run automated test suite
+python manage.py test energy
+
+# 7. Start Django development server (http://127.0.0.1:8000)
+python manage.py runserver
+
+# -------------------------------------------------------------
+# In a NEW PowerShell terminal (from repository root):
+# 8. Start the React frontend (http://localhost:3000 or :5173)
+npm run dev
+```
+
+#### Step B: Git Bash / Linux / macOS
+
+```bash
+# 1. Navigate to backend and create virtual environment
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Configure environment
+cp .env.example .env
+
+# 4. Apply database migrations
+python manage.py migrate
+
+# 5. (Optional) Load sample demonstration data
+python manage.py load_demo_energy_data
+
+# 6. Run automated test suite
+python manage.py test energy
+
+# 7. Start Django server
+python manage.py runserver
+
+# In a separate terminal:
+npm run dev
+```
+

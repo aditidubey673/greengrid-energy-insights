@@ -17,31 +17,58 @@ export const locationPresets: Record<string, number> = {
 };
 
 export type SolarInputs = {
-  consumption: number; bill: number; area: number; panelType: PanelType; capacity: number; system: SystemType;
-  sunHours: number; efficiency: number; // efficiency in % (after losses)
-  costPerKw: number; costPerPanel: number; inverterCost: number; installCost: number; batteryCost: number;
-  tariff: number; emissionFactor: number;
+  consumption: number;
+  bill: number;
+  area: number;
+  panelType: PanelType;
+  capacity: number;
+  system: SystemType;
+  sunHours: number;
+  efficiency: number; // efficiency in % (after losses)
+  costPerKw: number;
+  costPerPanel: number;
+  inverterCost: number;
+  installCost: number;
+  batteryCost: number;
+  tariff: number;
+  emissionFactor: number;
 };
 
 export type Field = keyof SolarInputs;
 
 export function validate(i: SolarInputs): Partial<Record<Field, string>> {
   const e: Partial<Record<Field, string>> = {};
-  const num: Field[] = ["consumption", "bill", "area", "capacity", "sunHours", "efficiency", "costPerKw", "costPerPanel", "inverterCost", "installCost", "batteryCost", "tariff", "emissionFactor"];
+  const num: Field[] = [
+    "consumption",
+    "bill",
+    "area",
+    "capacity",
+    "sunHours",
+    "efficiency",
+    "costPerKw",
+    "costPerPanel",
+    "inverterCost",
+    "installCost",
+    "batteryCost",
+    "tariff",
+    "emissionFactor",
+  ];
   for (const f of num) {
     const v = i[f] as number;
     if (!Number.isFinite(v)) e[f] = "This field is required.";
     else if (v < 0) e[f] = "Value cannot be negative.";
   }
   const positive: Field[] = ["consumption", "area", "capacity", "sunHours", "efficiency", "tariff"];
-  for (const f of positive) if (!e[f] && (i[f] as number) === 0) e[f] = "Value must be greater than zero.";
+  for (const f of positive)
+    if (!e[f] && (i[f] as number) === 0) e[f] = "Value must be greater than zero.";
   if (!e.efficiency && i.efficiency > 100) e.efficiency = "Efficiency cannot exceed 100%.";
   if (!e.sunHours && i.sunHours > 12) e.sunHours = "Daily sun hours above 12 are unrealistic.";
   return e;
 }
 
 /** kWh produced per kW per month (30 days). */
-export const monthlyYieldPerKw = (sunHours: number, efficiency: number) => sunHours * 30 * (efficiency / 100);
+export const monthlyYieldPerKw = (sunHours: number, efficiency: number) =>
+  sunHours * 30 * (efficiency / 100);
 
 export function recommendCapacity(consumption: number, sunHours: number, efficiency: number) {
   const y = monthlyYieldPerKw(sunHours, efficiency);
@@ -66,9 +93,12 @@ export function calculate(i: SolarInputs) {
   const panelCost = cap * i.costPerKw + panels * i.costPerPanel;
   const inverter = cap * i.inverterCost;
   const install = cap * i.installCost;
-  const battery = i.system === "on-grid" ? 0 : cap * i.batteryCost * (i.system === "hybrid" ? 0.65 : 1);
+  const battery =
+    i.system === "on-grid" ? 0 : cap * i.batteryCost * (i.system === "hybrid" ? 0.65 : 1);
   const total = panelCost + inverter + install + battery;
   const generation = cap * monthlyYieldPerKw(i.sunHours, i.efficiency);
+  const dailyGeneration = generation / 30;
+  const annualGeneration = generation * 12;
   const offset = Math.min(generation, i.consumption);
   const tariffSavings = offset * i.tariff;
   const savings = i.bill > 0 ? Math.min(i.bill, tariffSavings) : tariffSavings;
@@ -76,5 +106,28 @@ export function calculate(i: SolarInputs) {
   const payback = annual > 0 && total > 0 ? total / annual : null;
   const roi = total > 0 ? (annual / total) * 100 : null;
   const co2 = generation * 12 * i.emissionFactor;
-  return { errors, valid, ok, recommended, maxArea, areaInsufficient, requiredArea, cap, panels, panelCost, inverter, install, battery, total, generation, savings, annual, payback, roi, co2 };
+  return {
+    errors,
+    valid,
+    ok,
+    recommended,
+    maxArea,
+    areaInsufficient,
+    requiredArea,
+    cap,
+    panels,
+    panelCost,
+    inverter,
+    install,
+    battery,
+    total,
+    generation,
+    dailyGeneration,
+    annualGeneration,
+    savings,
+    annual,
+    payback,
+    roi,
+    co2,
+  };
 }
