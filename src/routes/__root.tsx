@@ -115,7 +115,7 @@ function RootShell({ children }: { children: ReactNode }) {
         </noscript>
         <HeadContent />
       </head>
-      <body>
+      <body className="m-0 p-0">
         {children}
         <Scripts />
       </body>

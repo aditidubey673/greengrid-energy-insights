@@ -8,14 +8,16 @@ type Phase = "playing" | "fallback" | "fading" | "done";
  * The `gg-reveal` animation is a no-JS safety net so the app can never stay hidden forever.
  */
 export const INITIAL_LOADER_CRITICAL_CSS = `
+html,body{margin:0;padding:0;width:100%;height:100%}
 #gg-app[data-loading]{visibility:hidden;animation:gg-reveal 0s linear 15s forwards}
 @keyframes gg-reveal{to{visibility:visible}}
-#gg-loader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#fff;opacity:1;transition-property:opacity;transition-timing-function:ease-out}
+#gg-loader{position:fixed;inset:0;width:100vw;width:100%;height:100vh;height:100dvh;z-index:9999;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#000;opacity:1;transition-property:opacity;transition-timing-function:ease-out}
 #gg-loader[data-fading]{opacity:0;pointer-events:none}
-#gg-loader video{display:block;max-width:100%;max-height:100%;object-fit:contain}
-#gg-loader .gg-fallback{display:flex;flex-direction:column;align-items:center;gap:16px;font-family:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif}
+#gg-loader video{position:fixed;inset:0;width:100vw;width:100%;height:100vh;height:100dvh;min-width:100%;min-height:100%;object-fit:cover;object-position:center;display:block;z-index:1}
+#gg-loader .gg-overlay{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+#gg-loader .gg-fallback{position:relative;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif}
 #gg-loader .gg-spinner{width:40px;height:40px;box-sizing:border-box;border-radius:9999px;border:4px solid rgba(22,163,74,.2);border-top-color:#16a34a;animation:gg-spin .8s linear infinite}
-#gg-loader .gg-label{font-size:14px;font-weight:500;color:#6b7280}
+#gg-loader .gg-label{font-size:14px;font-weight:500;color:#e5e7eb}
 #gg-loader .gg-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @keyframes gg-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#gg-loader .gg-spinner{animation-duration:2s}}
@@ -29,6 +31,7 @@ interface InitialLoadingScreenProps {
   fallbackDurationMs?: number;
   fadeDurationMs?: number;
   label?: string;
+  overlay?: ReactNode;
   children: ReactNode;
 }
 
@@ -39,6 +42,7 @@ export function InitialLoadingScreen({
   fallbackDurationMs = 900,
   fadeDurationMs = 250,
   label = "Loading GreenGrid",
+  overlay,
   children,
 }: InitialLoadingScreenProps) {
   const [phase, setPhase] = useState<Phase>("playing");
@@ -111,7 +115,15 @@ export function InitialLoadingScreen({
           aria-live="polite"
           aria-label={label}
           data-fading={phase === "fading" ? "" : undefined}
-          style={{ transitionDuration: `${fadeDurationMs}ms` }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100vw",
+            height: "100dvh",
+            zIndex: 9999,
+            overflow: "hidden",
+            transitionDuration: `${fadeDurationMs}ms`,
+          }}
           onTransitionEnd={(event) => {
             if (event.target === event.currentTarget && phase === "fading") setPhase("done");
           }}
@@ -122,18 +134,33 @@ export function InitialLoadingScreen({
               <span className="gg-label">{label}…</span>
             </div>
           ) : (
-            <video
-              ref={videoRef}
-              src={src}
-              autoPlay
-              muted
-              playsInline
-              preload="auto"
-              disablePictureInPicture
-              aria-hidden="true"
-              onEnded={startFade}
-              onError={showFallback}
-            />
+            <>
+              <video
+                ref={videoRef}
+                src={src}
+                autoPlay
+                muted
+                playsInline
+                preload="auto"
+                disablePictureInPicture
+                aria-hidden="true"
+                onEnded={startFade}
+                onError={showFallback}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  width: "100vw",
+                  height: "100dvh",
+                  minWidth: "100%",
+                  minHeight: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center",
+                  display: "block",
+                  zIndex: 1,
+                }}
+              />
+              {overlay && <div className="gg-overlay">{overlay}</div>}
+            </>
           )}
           <span className="gg-sr">{label}</span>
         </div>

@@ -213,6 +213,12 @@
     border-color: var(--color-border);
   }
 
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -223,6 +229,35 @@
   button, a, input, select { letter-spacing: 0; }
 }
 
+/* Fullscreen intro loader overlay & video */
+#gg-loader {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 9999;
+  overflow: hidden;
+  background-color: #000;
+}
+
+#gg-loader video {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  z-index: 1;
+}
+
 @utility shadow-status { box-shadow: 0 0 12px color-mix(in oklab, var(--primary) 70%, transparent); }
 
 * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
